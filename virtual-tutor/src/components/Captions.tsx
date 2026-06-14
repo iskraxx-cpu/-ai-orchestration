@@ -1,5 +1,5 @@
 import { interpolate, useCurrentFrame } from "remotion";
-import type { Caption } from "../lesson-data";
+import type { Caption } from "../lessons";
 import { theme } from "../theme";
 
 // Subtitle band driven by the caption list. The active caption is chosen by the

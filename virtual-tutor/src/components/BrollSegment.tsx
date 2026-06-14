@@ -7,13 +7,13 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import type { PresenterClip } from "../lesson-data";
+import type { ClipTrim } from "../lessons";
 import { Brand } from "./Brand";
 import { theme } from "../theme";
 
 // B-roll with a key takeaway card. Darkened so text reads cleanly.
 export const BrollSegment: React.FC<{
-  clip: PresenterClip;
+  clip: ClipTrim;
   label: string;
   text: string;
 }> = ({ clip, label, text }) => {
@@ -29,7 +29,7 @@ export const BrollSegment: React.FC<{
         src={staticFile(clip.src)}
         trimBefore={Math.round(clip.startSec * fps)}
         trimAfter={Math.round(clip.endSec * fps)}
-        muted={!clip.withAudio}
+        muted
         style={{ width: "100%", height: "100%", objectFit: "cover" }}
       />
       {/* Readability scrim */}

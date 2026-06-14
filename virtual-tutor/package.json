@@ -5,7 +5,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "remotion studio",
-    "render": "remotion render Lesson out/lesson.mp4",
+    "voiceover": "node scripts/generate-voiceover.mjs",
+    "render": "remotion render Lesson01 out/Lesson01.mp4",
+    "render:all": "remotion render --concurrency 4",
     "upgrade": "remotion upgrade",
     "lint": "tsc"
   },

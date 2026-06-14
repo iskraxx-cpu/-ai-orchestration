@@ -1,48 +1,60 @@
-import { AbsoluteFill, Series } from "remotion";
+import { AbsoluteFill, Audio, Sequence, Series, staticFile } from "remotion";
 import { BrollSegment } from "./components/BrollSegment";
 import { IntroCard } from "./components/IntroCard";
 import { Outro } from "./components/Outro";
 import { PresenterSegment } from "./components/PresenterSegment";
-import { FPS, lesson } from "./lesson-data";
+import { FPS, getVoiceover, type LessonDef } from "./lessons";
 
-// Segment durations (frames @ FPS). Presenter/b-roll match the trim windows.
-export const INTRO_FRAMES = Math.round(2.5 * FPS);
-export const PRESENTER_FRAMES = Math.round(
-  (lesson.presenter.endSec - lesson.presenter.startSec) * FPS,
-);
-export const BROLL_FRAMES = Math.round(
-  (lesson.broll.endSec - lesson.broll.startSec) * FPS,
-);
-export const OUTRO_FRAMES = Math.round(3 * FPS);
+const INTRO_SEC = 2.5;
+const OUTRO_SEC = 3;
+const PRESENTER_PAD_SEC = 0.6; // small tail after the voiceover ends
+const BROLL_SEC = 8;
 
-export const LESSON_DURATION =
-  INTRO_FRAMES + PRESENTER_FRAMES + BROLL_FRAMES + OUTRO_FRAMES;
+// Compute the frame layout for a lesson from its (generated) voiceover length.
+export const getLessonLayout = (lesson: LessonDef) => {
+  const vo = getVoiceover(lesson.id);
+  const intro = Math.round(INTRO_SEC * FPS);
+  // Presenter segment lasts as long as the narration (or a default if none yet).
+  const narrationSec = vo.durationSec > 0 ? vo.durationSec : 8;
+  const presenter = Math.round((narrationSec + PRESENTER_PAD_SEC) * FPS);
+  const broll = Math.round(BROLL_SEC * FPS);
+  const outro = Math.round(OUTRO_SEC * FPS);
+  return {
+    intro,
+    presenter,
+    broll,
+    outro,
+    total: intro + presenter + broll + outro,
+  };
+};
 
-export const Lesson: React.FC = () => {
+export const Lesson: React.FC<{ lesson: LessonDef }> = ({ lesson }) => {
+  const layout = getLessonLayout(lesson);
+  const vo = getVoiceover(lesson.id);
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      {/*
-        Optional voiceover (TTS): drop an mp3 into public/ and uncomment.
-        External TTS services are blocked in this environment, so generate the
-        audio offline (or with a reachable provider) and commit the file.
-
-        <Audio src={staticFile("voiceover.mp3")} />
-      */}
       <Series>
-        <Series.Sequence durationInFrames={INTRO_FRAMES}>
+        <Series.Sequence durationInFrames={layout.intro}>
           <IntroCard title={lesson.title} subtitle={lesson.subtitle} />
         </Series.Sequence>
 
-        <Series.Sequence durationInFrames={PRESENTER_FRAMES}>
+        <Series.Sequence durationInFrames={layout.presenter}>
+          {/* Narration voiceover plays over the talking-head segment. */}
+          {vo.audio ? (
+            <Sequence>
+              <Audio src={staticFile(vo.audio)} />
+            </Sequence>
+          ) : null}
           <PresenterSegment
             clip={lesson.presenter}
-            captions={lesson.presenterCaptions}
+            captions={vo.captions}
             name={lesson.presenterName}
             role={lesson.presenterRole}
           />
         </Series.Sequence>
 
-        <Series.Sequence durationInFrames={BROLL_FRAMES}>
+        <Series.Sequence durationInFrames={layout.broll}>
           <BrollSegment
             clip={lesson.broll}
             label={lesson.brollKeyPoint.label}
@@ -50,7 +62,7 @@ export const Lesson: React.FC = () => {
           />
         </Series.Sequence>
 
-        <Series.Sequence durationInFrames={OUTRO_FRAMES}>
+        <Series.Sequence durationInFrames={layout.outro}>
           <Outro title={lesson.outroTitle} bullets={lesson.outroBullets} />
         </Series.Sequence>
       </Series>
